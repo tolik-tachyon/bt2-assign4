@@ -1,38 +1,38 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import "../../src/token/GovernanceToken.sol";
+import "src/token/GovernanceToken.sol";
 
 contract GovernanceTokenTest is Test {
     GovernanceToken token;
 
-    address teamVesting = address(1);
-    address treasury = address(2);
-    address airdrop = address(3);
-    address liquidity = address(4);
+    address teamUser = address(10);
+    address treasuryUser = address(11);
+    address airdropUser = address(12);
+    address liquidityUser = address(13);
 
     address voter = address(10);
 
     function setUp() public {
         token = new GovernanceToken(
-            teamVesting,
-            treasury,
-            airdrop,
-            liquidity
+            teamUser,
+            treasuryUser,
+            airdropUser,
+            liquidityUser
         );
     }
 
     // 1. correct initial distribution
     function testInitialDistribution() public {
-        assertEq(token.balanceOf(treasury), 300_000 ether);
-        assertEq(token.balanceOf(airdrop), 200_000 ether);
-        assertEq(token.balanceOf(liquidity), 100_000 ether);
-        assertEq(token.balanceOf(teamVesting), 400_000 ether);
+        assertEq(token.balanceOf(treasuryUser), 300_000 ether);
+        assertEq(token.balanceOf(airdropUser), 200_000 ether);
+        assertEq(token.balanceOf(liquidityUser), 100_000 ether);
+        assertEq(token.balanceOf(teamUser), 400_000 ether);
     }
 
     // 2. delegation enables voting power
     function testDelegation() public {
-        vm.prank(treasury);
+        vm.prank(treasuryUser);
         token.delegate(voter);
 
         assertGt(token.getVotes(voter), 0);
@@ -40,11 +40,11 @@ contract GovernanceTokenTest is Test {
 
     // 3. voting power snapshot consistency
     function testVotingPowerSnapshot() public {
-        vm.prank(treasury);
-        token.delegate(treasury);
+        vm.prank(treasuryUser);
+        token.delegate(treasuryUser);
 
-        uint256 votes = token.getVotes(treasury);
-        uint256 balance = token.balanceOf(treasury);
+        uint256 votes = token.getVotes(treasuryUser);
+        uint256 balance = token.balanceOf(treasuryUser);
 
         assertEq(votes, balance);
     }
@@ -83,14 +83,21 @@ contract GovernanceTokenTest is Test {
 
     // 5. delegation changes voting power dynamically
     function testDelegationUpdate() public {
-        vm.prank(treasury);
-        token.delegate(voter);
+    vm.prank(treasuryUser);
+    token.transfer(voter, 1000 ether);
 
-        uint256 before = token.getVotes(voter);
+    vm.prank(voter);
+    token.delegate(voter);
 
-        vm.prank(airdrop);
-        token.transfer(voter, 100 ether);
+    vm.roll(block.number + 1); // ✅ CRITICAL FIX
 
-        assertGt(token.getVotes(voter), before);
+    uint256 before = token.getVotes(voter);
+
+    vm.prank(voter);
+    token.transfer(address(20), 100 ether);
+
+    vm.roll(block.number + 1); // ✅ update checkpoint
+
+    assertLt(token.getVotes(voter), before);
     }
 }

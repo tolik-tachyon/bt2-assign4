@@ -3,10 +3,11 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 
-import "../../src/governance/MyGovernor.sol";
-import "../../src/token/GovernanceToken.sol";
-import "../../src/core/Box.sol";
+import "src/governance/MyGovernor.sol";
+import "src/token/GovernanceToken.sol";
+import "src/core/Box.sol";
 import "@openzeppelin/contracts/governance/TimelockController.sol";
+import "@openzeppelin/contracts/governance/IGovernor.sol";
 
 contract DAO_Treasury_E2E_Test is Test {
     GovernanceToken token;
@@ -18,62 +19,73 @@ contract DAO_Treasury_E2E_Test is Test {
     address voter2 = address(2);
 
     function setUp() public {
-        // ---------------- TOKEN ----------------
-        token = new GovernanceToken(
-            address(0),
-            address(this),
-            address(this),
-            address(this)
-        );
+    // ---------------- ACTORS ----------------
+    address teamUser = address(10);
+    address treasuryUser = address(11);
+    address airdropUser = address(12);
+    address liquidityUser = address(13);
 
-        token.transfer(voter1, 300_000 ether);
-        token.transfer(voter2, 300_000 ether);
+    // ---------------- TOKEN ----------------
+    token = new GovernanceToken(
+        teamUser,
+        treasuryUser,
+        airdropUser,
+        liquidityUser
+    );
 
-        vm.prank(voter1);
-        token.delegate(voter1);
+    // ---------------- VOTERS ----------------
+    vm.prank(teamUser);
+    token.transfer(voter1, 500_000 ether);
 
-        vm.prank(voter2);
-        token.delegate(voter2);
+    vm.prank(teamUser);
+    token.transfer(voter2, 500_000 ether);
 
-        // ---------------- TIMELOCK ----------------
-        address[] memory proposers = new address[](0);
-        address[] memory executors = new address[](1);
-        executors[0] = address(0);
+    // ---------------- DELEGATION ----------------
+    vm.prank(voter1);
+    token.delegate(voter1);
 
-        timelock = new TimelockController(
-            2 days,
-            proposers,
-            executors,
-            address(this)
-        );
+    vm.prank(voter2);
+    token.delegate(voter2);
 
-        // ---------------- GOVERNOR ----------------
-        governor = new MyGovernor(token, timelock);
+    vm.prank(teamUser);
+    token.delegate(teamUser);
 
-        // roles setup
-        timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
-        timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
+    vm.prank(treasuryUser);
+    token.delegate(treasuryUser);
 
-        // ---------------- BOX ----------------
-        box = new Box(address(timelock));
+    vm.roll(block.number + 1);
+
+    // ---------------- TIMELOCK ----------------
+    address[] memory proposers = new address[](0);
+    address[] memory executors = new address[](1);
+    executors[0] = address(0);
+
+    timelock = new TimelockController(
+        2 days,
+        proposers,
+        executors,
+        address(this)
+    );
+
+    governor = new MyGovernor(token, timelock);
+
+    timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
+    timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
+
+    // ---------------- TARGET CONTRACTS ----------------
+    box = new Box(address(timelock));
     }
 
-    // =========================================================
-    // TASK 3 REQUIRED E2E TEST
-    // =========================================================
     function test_box_governance_full_flow() public {
-        // ---------------- PROPOSE ----------------
         address[] memory targets = new address[](1);
         targets[0] = address(box);
 
         uint256[] memory values = new uint256[](1);
 
         bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = abi.encodeWithSignature(
-            "store(uint256)",
-            42
-        );
+        calldatas[0] = abi.encodeWithSignature("store(uint256)", 42);
 
+        // ---------------- PROPOSE ----------------
         vm.prank(voter1);
         uint256 proposalId = governor.propose(
             targets,
@@ -82,15 +94,15 @@ contract DAO_Treasury_E2E_Test is Test {
             "Set Box = 42"
         );
 
-        // ---------------- MOVE TO ACTIVE ----------------
+        // ---------------- ACTIVE STATE ----------------
         vm.roll(block.number + 1);
 
         // ---------------- VOTING ----------------
         vm.prank(voter1);
-        governor.castVote(proposalId, 1); // FOR
+        governor.castVote(proposalId, 1);
 
         vm.prank(voter2);
-        governor.castVote(proposalId, 1); // FOR
+        governor.castVote(proposalId, 1);
 
         // ---------------- QUEUE ----------------
         vm.roll(block.number + 7000);
@@ -100,6 +112,11 @@ contract DAO_Treasury_E2E_Test is Test {
             values,
             calldatas,
             keccak256(bytes("Set Box = 42"))
+        );
+
+        assertEq(
+            uint256(governor.state(proposalId)),
+            uint256(IGovernor.ProposalState.Queued)
         );
 
         // ---------------- EXECUTE ----------------
