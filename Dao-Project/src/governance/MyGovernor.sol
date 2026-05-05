@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol
 import "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
 import "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
 import "@openzeppelin/contracts/governance/extensions/GovernorTimelockControl.sol";
+import "@openzeppelin/contracts/interfaces/IERC5805.sol";
 
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
@@ -70,7 +71,7 @@ contract MyGovernor is
         override(Governor, GovernorSettings)
         returns (uint256)
     {
-        return super.proposalThreshold();
+        return IERC5805(address(token())).getPastTotalSupply(block.number - 1) / 100;
     }
 
     // ----------------------------
