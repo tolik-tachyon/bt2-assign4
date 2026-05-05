@@ -89,14 +89,14 @@ contract GovernanceTokenTest is Test {
     vm.prank(voter);
     token.delegate(voter);
 
-    vm.roll(block.number + 1); // ✅ CRITICAL FIX
+    vm.roll(block.number + 1);
 
     uint256 before = token.getVotes(voter);
 
     vm.prank(voter);
     token.transfer(address(20), 100 ether);
 
-    vm.roll(block.number + 1); // ✅ update checkpoint
+    vm.roll(block.number + 1);
 
     assertLt(token.getVotes(voter), before);
     }

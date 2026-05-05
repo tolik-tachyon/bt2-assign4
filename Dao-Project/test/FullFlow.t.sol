@@ -21,7 +21,8 @@ contract FullFlowTest is Test {
     address alice = address(1);
     address bob = address(2);
 
-    uint256 constant VOTING_PERIOD = 7000;
+    uint256 constant  DAY_IN_BLOCKS = 86400;
+    uint256 constant WEEK_IN_BLOCKS = 7 * DAY_IN_BLOCKS;
 
     function setUp() public {
         address teamUser = address(10);
@@ -36,7 +37,6 @@ contract FullFlowTest is Test {
             liquidityUser
         );
 
-        // ✅ FIX: replace deal with real transfers
         deal(address(token), alice, 1_000_000 ether);
         deal(address(token), bob, 1_000_000 ether);
 
@@ -47,7 +47,7 @@ contract FullFlowTest is Test {
         token.delegate(bob);
 
         // move past delegation checkpoint
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         // TIMELOCK
         address[] memory proposers = new address[](0);
@@ -94,9 +94,8 @@ contract FullFlowTest is Test {
         );
 
         // move to active voting
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
-        // ✅ FIX: proper voting (NO proposalSnapshot!)
         vm.prank(alice);
         governor.castVote(proposalId, 1);
 
@@ -104,7 +103,7 @@ contract FullFlowTest is Test {
         governor.castVote(proposalId, 1);
 
         // end voting period
-        vm.roll(block.number + VOTING_PERIOD + 1);
+        vm.roll(block.number + WEEK_IN_BLOCKS + DAY_IN_BLOCKS + 1);
 
         bytes32 descHash = keccak256(bytes(description));
 
@@ -130,10 +129,11 @@ contract FullFlowTest is Test {
         uint256[] memory v2 = new uint256[](1);
 
         bytes[] memory c2 = new bytes[](1);
+        uint256 sent = 5 ether;
         c2[0] = abi.encodeWithSignature(
             "withdrawETH(address,uint256)",
             alice,
-            5 ether
+            sent
         );
 
         string memory desc2 = "Send ETH";
@@ -141,7 +141,7 @@ contract FullFlowTest is Test {
         vm.prank(alice);
         uint256 proposal2 = governor.propose(t2, v2, c2, desc2);
 
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(alice);
         governor.castVote(proposal2, 1);
@@ -149,7 +149,7 @@ contract FullFlowTest is Test {
         vm.prank(bob);
         governor.castVote(proposal2, 1);
 
-        vm.roll(block.number + VOTING_PERIOD + 1);
+        vm.roll(block.number + WEEK_IN_BLOCKS + DAY_IN_BLOCKS + 1);
 
         bytes32 descHash2 = keccak256(bytes(desc2));
 
@@ -163,5 +163,6 @@ contract FullFlowTest is Test {
         vm.warp(block.timestamp + 2 days + 1);
 
         governor.execute(t2, v2, c2, descHash2);
+        assertEq(alice.balance, sent, "treasury ETH not received");
     }
 }

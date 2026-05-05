@@ -15,6 +15,9 @@ contract DAO_Treasury_E2E_Test is Test {
     TimelockController timelock;
     Box box;
 
+    uint256 constant  DAY_IN_BLOCKS = 86400;
+    uint256 constant WEEK_IN_BLOCKS = 7 * DAY_IN_BLOCKS;
+
     address voter1 = address(1);
     address voter2 = address(2);
 
@@ -35,10 +38,10 @@ contract DAO_Treasury_E2E_Test is Test {
 
     // ---------------- VOTERS ----------------
     vm.prank(teamUser);
-    token.transfer(voter1, 500_000 ether);
+    token.transfer(voter1, 100_000 ether);
 
     vm.prank(teamUser);
-    token.transfer(voter2, 500_000 ether);
+    token.transfer(voter2, 200_000 ether);
 
     // ---------------- DELEGATION ----------------
     vm.prank(voter1);
@@ -95,7 +98,7 @@ contract DAO_Treasury_E2E_Test is Test {
         );
 
         // ---------------- ACTIVE STATE ----------------
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1); // skip votingDelay
 
         // ---------------- VOTING ----------------
         vm.prank(voter1);
@@ -105,7 +108,7 @@ contract DAO_Treasury_E2E_Test is Test {
         governor.castVote(proposalId, 1);
 
         // ---------------- QUEUE ----------------
-        vm.roll(block.number + 7000);
+        vm.roll(block.number + WEEK_IN_BLOCKS + 1); // skip votingDelay
 
         governor.queue(
             targets,
@@ -120,7 +123,7 @@ contract DAO_Treasury_E2E_Test is Test {
         );
 
         // ---------------- EXECUTE ----------------
-        vm.warp(block.timestamp + 2 days);
+        vm.warp(block.timestamp + 2 days + 1);
 
         governor.execute(
             targets,

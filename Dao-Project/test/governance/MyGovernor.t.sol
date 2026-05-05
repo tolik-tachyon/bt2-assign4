@@ -15,6 +15,9 @@ contract MyGovernorTest is Test {
     TimelockController timelock;
     Box box;
 
+    uint256 constant  DAY_IN_BLOCKS = 86400;
+    uint256 constant WEEK_IN_BLOCKS = 7 * DAY_IN_BLOCKS;
+
     address teamUser = address(10);
     address treasuryUser = address(11);
     address airdropUser = address(12);
@@ -31,12 +34,11 @@ contract MyGovernorTest is Test {
         liquidityUser
     );
 
-    // ✅ FUND VOTERS (MISSING BEFORE)
     vm.prank(liquidityUser);
-    token.transfer(voter1, 500_000 ether);
+    token.transfer(voter1, 30_000 ether);
 
     vm.prank(liquidityUser);
-    token.transfer(voter2, 500_000 ether);
+    token.transfer(voter2, 60_000 ether);
 
     vm.prank(voter1);
     token.delegate(voter1);
@@ -44,7 +46,7 @@ contract MyGovernorTest is Test {
     vm.prank(voter2);
     token.delegate(voter2);
 
-    vm.roll(block.number + 1);
+    vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
     address[] memory proposers = new address[](0);
     address[] memory executors = new address[](1);
@@ -99,7 +101,7 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_state_active() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         assertEq(
             uint256(governor.state(id)),
@@ -112,10 +114,15 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_vote_for() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
+
+        (uint256 against, uint256 forVotes, uint256 abstain) = governor.proposalVotes(id);
+        assertGt(forVotes, 0);
+        assertEq(against, 0);
+        assertEq(abstain, 0);
     }
 
     // =========================================================
@@ -123,10 +130,13 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_vote_against() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 0);
+
+        (uint256 against,,) = governor.proposalVotes(id);
+        assertGt(against, 0);
     }
 
     // =========================================================
@@ -134,10 +144,13 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_vote_abstain() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 2);
+
+        (,, uint256 abstain) = governor.proposalVotes(id);
+        assertGt(abstain, 0);
     }
 
     // =========================================================
@@ -147,7 +160,7 @@ contract MyGovernorTest is Test {
     vm.prank(address(10));
     token.transfer(voter1, 1000 ether);
 
-    vm.roll(block.number + 1);
+    vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
     vm.prank(voter1);
     token.delegate(voter1);
@@ -160,14 +173,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_succeeded_state() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + 10000);
+        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
 
         assertEq(
             uint256(governor.state(id)),
@@ -180,14 +193,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_queue() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + 10000);
+        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
 
         governor.queue(
             _targets(),
@@ -202,14 +215,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_execute() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + 10000);
+        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
 
         governor.queue(
             _targets(),
@@ -236,7 +249,7 @@ contract MyGovernorTest is Test {
     function test_defeated() public {
         uint256 id = _proposal();
 
-        vm.roll(block.number + 10000);
+        vm.roll(block.number + DAY_IN_BLOCKS + WEEK_IN_BLOCKS + 1);
 
         assertEq(
             uint256(governor.state(id)),
@@ -258,14 +271,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_full_lifecycle() public {
         uint256 id = _proposal();
-        vm.roll(block.number + 1);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + 10000);
+        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
 
         governor.queue(
             _targets(),
@@ -284,6 +297,41 @@ contract MyGovernorTest is Test {
         );
 
         assertEq(box.retrieve(), 42);
+    }
+
+    // =========================================================
+    // 13. proposal threshold blocks low-balance proposer
+    // =========================================================
+    function test_proposal_threshold_blocks_low_balance() public {
+        address poorUser = address(99);
+        vm.prank(liquidityUser);
+        token.transfer(poorUser, 1 ether); // well below 1% threshold
+        vm.prank(poorUser);
+        token.delegate(poorUser);
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        address[] memory t = new address[](1); t[0] = address(box);
+        uint256[] memory v = new uint256[](1);
+        bytes[] memory c = new bytes[](1);
+        c[0] = abi.encodeWithSignature("store(uint256)", 1);
+        vm.expectRevert();
+        vm.prank(poorUser);
+        governor.propose(t, v, c, "should fail");
+    }
+
+    // =========================================================
+    // 14. quorum not met -> defeated
+    // =========================================================
+    function test_defeated_quorum_not_met() public {
+        // voter1 has 30k, total supply ~1M -> 3% < 4% quorum
+        uint256 id = _proposal();
+        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.prank(voter1);
+        governor.castVote(id, 1); // votes FOR but quorum not met
+        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
+        assertEq(
+            uint256(governor.state(id)),
+            uint256(IGovernor.ProposalState.Defeated)
+        );
     }
 
     // =========================================================
