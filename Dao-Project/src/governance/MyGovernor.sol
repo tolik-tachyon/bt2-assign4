@@ -46,7 +46,7 @@ contract MyGovernor is
     {
         // NOTE: Only for assignment/test purposes!
         //       It resolves too quickly for real governor
-        return 2;
+        return 5;
         // return super.votingDelay();
     }
 
@@ -58,7 +58,7 @@ contract MyGovernor is
     {
         // NOTE: Only for assignment/test purposes!
         //       It resolves too quickly for real governor
-        return 7;
+        return 10;
         // return super.votingPeriod();
     }
 
