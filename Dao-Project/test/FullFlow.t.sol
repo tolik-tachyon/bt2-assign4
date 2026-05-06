@@ -21,8 +21,8 @@ contract FullFlowTest is Test {
     address alice = address(1);
     address bob = address(2);
 
-    uint256 constant  DAY_IN_BLOCKS = 86400;
-    uint256 constant WEEK_IN_BLOCKS = 7 * DAY_IN_BLOCKS;
+    uint256 VOTING_DELAY;
+    uint256 VOTING_PERIOD;
 
     function setUp() public {
         address teamUser = address(10);
@@ -47,7 +47,7 @@ contract FullFlowTest is Test {
         token.delegate(bob);
 
         // move past delegation checkpoint
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         // TIMELOCK
         address[] memory proposers = new address[](0);
@@ -64,6 +64,9 @@ contract FullFlowTest is Test {
 
         // GOVERNOR
         governor = new MyGovernor(token, timelock);
+
+        VOTING_DELAY  = governor.votingDelay();
+        VOTING_PERIOD = governor.votingPeriod();
 
         timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
         timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
@@ -94,7 +97,7 @@ contract FullFlowTest is Test {
         );
 
         // move to active voting
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(alice);
         governor.castVote(proposalId, 1);
@@ -103,7 +106,7 @@ contract FullFlowTest is Test {
         governor.castVote(proposalId, 1);
 
         // end voting period
-        vm.roll(block.number + WEEK_IN_BLOCKS + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_PERIOD + VOTING_DELAY + 1);
 
         bytes32 descHash = keccak256(bytes(description));
 
@@ -141,7 +144,7 @@ contract FullFlowTest is Test {
         vm.prank(alice);
         uint256 proposal2 = governor.propose(t2, v2, c2, desc2);
 
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(alice);
         governor.castVote(proposal2, 1);
@@ -149,7 +152,7 @@ contract FullFlowTest is Test {
         vm.prank(bob);
         governor.castVote(proposal2, 1);
 
-        vm.roll(block.number + WEEK_IN_BLOCKS + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_PERIOD + VOTING_DELAY + 1);
 
         bytes32 descHash2 = keccak256(bytes(desc2));
 

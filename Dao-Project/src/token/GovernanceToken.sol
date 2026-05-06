@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 contract GovernanceToken is ERC20, ERC20Permit, ERC20Votes {
     uint256 public constant TOTAL_SUPPLY = 1_000_000 ether;
 
-    address public teamVesting;
-    address public treasury;
-    address public airdrop;
-    address public liquidity;
+    address immutable public teamVesting;
+    address immutable public treasury;
+    address immutable public airdrop;
+    address immutable public liquidity;
 
     constructor(
         address _teamVesting,
@@ -22,6 +22,10 @@ contract GovernanceToken is ERC20, ERC20Permit, ERC20Votes {
         ERC20("GovernanceToken", "GOV")
         ERC20Permit("GovernanceToken")
     {
+        require(_teamVesting != address(0));
+        require(_treasury    != address(0));
+        require(_airdrop     != address(0));
+        require(_liquidity   != address(0));
         teamVesting = _teamVesting;
         treasury = _treasury;
         airdrop = _airdrop;

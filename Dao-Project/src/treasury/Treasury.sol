@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Treasury {
+    using SafeERC20 for IERC20;
     address public immutable timelock;
 
     modifier onlyTimelock() {
@@ -12,6 +13,7 @@ contract Treasury {
     }
 
     constructor(address _timelock) {
+        require(_timelock != address(0));
         timelock = _timelock;
     }
 
@@ -24,6 +26,7 @@ contract Treasury {
         external
         onlyTimelock
     {
+        require(to != address(0));
         (bool success, ) = to.call{value: amount}("");
         require(success, "ETH transfer failed");
     }
@@ -36,9 +39,6 @@ contract Treasury {
         address to,
         uint256 amount
     ) external onlyTimelock {
-        require(
-            IERC20(token).transfer(to, amount),
-            "Token transfer failed"
-        );
+        IERC20(token).safeTransfer(to, amount);
     }
 }

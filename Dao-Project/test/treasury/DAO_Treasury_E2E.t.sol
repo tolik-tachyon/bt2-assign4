@@ -15,8 +15,8 @@ contract DAO_Treasury_E2E_Test is Test {
     TimelockController timelock;
     Box box;
 
-    uint256 constant  DAY_IN_BLOCKS = 86400;
-    uint256 constant WEEK_IN_BLOCKS = 7 * DAY_IN_BLOCKS;
+    uint256 VOTING_DELAY;
+    uint256 VOTING_PERIOD;
 
     address voter1 = address(1);
     address voter2 = address(2);
@@ -72,6 +72,9 @@ contract DAO_Treasury_E2E_Test is Test {
 
     governor = new MyGovernor(token, timelock);
 
+    VOTING_DELAY  = governor.votingDelay();
+    VOTING_PERIOD = governor.votingPeriod();
+
     timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
     timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
 
@@ -98,7 +101,7 @@ contract DAO_Treasury_E2E_Test is Test {
         );
 
         // ---------------- ACTIVE STATE ----------------
-        vm.roll(block.number + DAY_IN_BLOCKS + 1); // skip votingDelay
+        vm.roll(block.number + VOTING_DELAY + 1); // skip votingDelay
 
         // ---------------- VOTING ----------------
         vm.prank(voter1);
@@ -108,7 +111,7 @@ contract DAO_Treasury_E2E_Test is Test {
         governor.castVote(proposalId, 1);
 
         // ---------------- QUEUE ----------------
-        vm.roll(block.number + WEEK_IN_BLOCKS + 1); // skip votingDelay
+        vm.roll(block.number + VOTING_PERIOD + 1); // skip votingDelay
 
         governor.queue(
             targets,

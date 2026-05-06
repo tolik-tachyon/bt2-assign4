@@ -68,9 +68,7 @@ contract TokenVestingTest is Test {
     }
 
     function testCannotReleaseBeforeVesting() public {
-        uint256 before = token.balanceOf(teamUser);
+        vm.expectRevert("Nothing to release");
         vesting.release();
-        assertEq(token.balanceOf(teamUser), before, "should release nothing");
-        assertEq(vesting.released(), 0);
     }
 }

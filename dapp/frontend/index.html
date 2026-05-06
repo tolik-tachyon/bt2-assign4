@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>DAO dApp</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- Thirdparty -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+              rel="stylesheet"
+              integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+              crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-4.0.0.min.js"
+                integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao="
+                crossorigin="anonymous"
+        ></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+                integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+                crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"
+                integrity="sha512-UXYETj+vXKSURF1UlgVRLzWRS9ZiQTv3lcL4rbeLyqTXCPNZC6PTLF/Ik3uxm2Zo+E109cUpJPZfLxJsCgKSng=="
+                crossorigin="anonymous"
+                referrerpolicy="no-referrer"></script>
+        <!-- Custom -->
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+
+        <!-- HEADER -->
+        <header id="site-header">
+            <div class="header-left">
+                <span class="logo-bracket">[</span>
+                <span class="logo-text">DAO</span>
+                <span class="logo-bracket">]</span>
+                <span class="logo-sub">GOVERNANCE</span>
+            </div>
+            <div class="header-right">
+                <span id="network-badge" class="net-badge">// NO NETWORK</span>
+                <button id="btn-connect" class="btn-terminal">CONNECT WALLET</button>
+                <button id="btn-theme" class="btn-ghost">◐</button>
+            </div>
+        </header>
+
+        <!-- WALLET STATUS BAR -->
+        <div id="wallet-bar" class="wallet-bar hidden">
+            <div class="wb-item">
+                <span class="wb-label">ADDR</span>
+                <span id="wb-address" class="wb-value mono">—</span>
+            </div>
+            <div class="wb-sep">//</div>
+            <div class="wb-item">
+                <span class="wb-label">BAL</span>
+                <span id="wb-balance" class="wb-value mono">—</span>
+            </div>
+            <div class="wb-sep">//</div>
+            <div class="wb-item">
+                <span class="wb-label">VOTES</span>
+                <span id="wb-votes" class="wb-value mono accent">—</span>
+            </div>
+            <div class="wb-sep">//</div>
+            <div class="wb-item">
+                <span class="wb-label">DELEGATE</span>
+                <span id="wb-delegate" class="wb-value mono">—</span>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT -->
+        <main id="app-main" class="hidden">
+            <div class="grid-two">
+
+                <!-- LEFT: CONFIG + DELEGATE -->
+                <section class="panel" id="panel-config">
+                    <div class="panel-header">
+                        <span class="ph-num">01</span>
+                        <span class="ph-title">CONTRACT CONFIG</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="field-group">
+                            <label class="field-label">TOKEN CONTRACT</label>
+                            <input id="input-token" class="field-input mono" type="text" placeholder="0x...">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">GOVERNOR CONTRACT</label>
+                            <input id="input-governor" class="field-input mono" type="text" placeholder="0x...">
+                        </div>
+                        <button id="btn-load" class="btn-terminal w-100 mt-2">LOAD CONTRACTS</button>
+                    </div>
+
+                    <div class="panel-header mt-3">
+                        <span class="ph-num">02</span>
+                        <span class="ph-title">DELEGATE VOTES</span>
+                    </div>
+                    <div class="panel-body">
+                        <div class="field-group">
+                            <label class="field-label">DELEGATE ADDRESS</label>
+                            <input id="input-delegate" class="field-input mono" type="text" placeholder="0x... (or SELF)">
+                        </div>
+                        <div class="btn-row">
+                            <button id="btn-self-delegate" class="btn-ghost flex-1">SELF</button>
+                            <button id="btn-delegate" class="btn-terminal flex-2">DELEGATE →</button>
+                        </div>
+                        <div id="delegate-status" class="status-line hidden"></div>
+                    </div>
+                </section>
+
+                <!-- RIGHT: PROPOSALS -->
+                <section class="panel" id="panel-proposals">
+                    <div class="panel-header">
+                        <span class="ph-num">03</span>
+                        <span class="ph-title">PROPOSALS</span>
+                        <button id="btn-refresh" class="btn-xs ml-auto">↻ REFRESH</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="field-group">
+                            <label class="field-label">PROPOSAL IDs (one per line)</label>
+                            <textarea id="input-proposals" class="field-input mono" rows="3" placeholder="123456789...&#10;987654321..."></textarea>
+                        </div>
+                        <button id="btn-load-proposals" class="btn-terminal w-100">FETCH PROPOSALS</button>
+                    </div>
+                    <div id="proposals-list" class="proposals-list"></div>
+                </section>
+
+            </div>
+
+            <!-- LOG -->
+            <section class="panel mt-3" id="panel-log">
+                <div class="panel-header">
+                    <span class="ph-num">04</span>
+                    <span class="ph-title">TX LOG</span>
+                    <button id="btn-clear-log" class="btn-xs ml-auto">CLEAR</button>
+                </div>
+                <div id="tx-log" class="tx-log"></div>
+            </section>
+        </main>
+
+        <!-- PROPOSAL TEMPLATE (hidden) -->
+        <template id="tpl-proposal">
+            <div class="proposal-card" data-id="">
+                <div class="prop-header">
+                    <span class="prop-id mono"></span>
+                    <span class="prop-state-badge"></span>
+                </div>
+                <div class="prop-desc mono"></div>
+                <div class="prop-results hidden">
+                    <div class="vote-bar-wrap">
+                        <div class="vote-bar">
+                            <div class="vb-for"></div>
+                            <div class="vb-against"></div>
+                            <div class="vb-abstain"></div>
+                        </div>
+                        <div class="vote-labels">
+                            <span class="vl-for">FOR: <b class="vf-val">0</b></span>
+                            <span class="vl-against">AGN: <b class="va-val">0</b></span>
+                            <span class="vl-abstain">ABS: <b class="vab-val">0</b></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="prop-actions hidden">
+                    <button class="btn-vote btn-for" data-support="1">▲ FOR</button>
+                    <button class="btn-vote btn-against" data-support="0">▼ AGAINST</button>
+                    <button class="btn-vote btn-abstain" data-support="2">— ABSTAIN</button>
+                </div>
+                <div class="prop-voted-badge hidden">✓ VOTE CAST</div>
+            </div>
+        </template>
+
+        <script src="script.js"></script>
+    </body>
+</html>
