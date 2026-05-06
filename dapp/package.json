@@ -1,0 +1,19 @@
+{
+  "name": "DAO",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "server": "node build/server.mjs",
+    "start": "npm run build && npm run server"
+  },
+  "keywords": [],
+  "author": "Fipaan/tolik-tachyon",
+  "license": "MIT",
+  "description": "DAO dApp frontend",
+  "dependencies": {
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
+  }
+}

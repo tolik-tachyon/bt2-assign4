@@ -20,8 +20,8 @@ contract MyGovernor is
     GovernorTimelockControl
 {
     constructor(
-        IVotes _token,
-        TimelockController _timelock
+        IVotes token_,
+        TimelockController timelock_
     )
         Governor("MyGovernor")
         GovernorSettings(
@@ -29,9 +29,9 @@ contract MyGovernor is
             1 weeks,
             1e18
         )
-        GovernorVotes(_token)
+        GovernorVotes(token_)
         GovernorVotesQuorumFraction(4)
-        GovernorTimelockControl(_timelock)
+        GovernorTimelockControl(timelock_)
     {}
 
     // ----------------------------
@@ -40,20 +40,26 @@ contract MyGovernor is
 
     function votingDelay()
         public
-        view
+        pure // view
         override(Governor, GovernorSettings)
         returns (uint256)
     {
-        return super.votingDelay();
+        // NOTE: Only for assignment/test purposes!
+        //       It resolves too quickly for real governor
+        return 2;
+        // return super.votingDelay();
     }
 
     function votingPeriod()
         public
-        view
+        pure // view
         override(Governor, GovernorSettings)
         returns (uint256)
     {
-        return super.votingPeriod();
+        // NOTE: Only for assignment/test purposes!
+        //       It resolves too quickly for real governor
+        return 7;
+        // return super.votingPeriod();
     }
 
     function quorum(uint256 blockNumber)

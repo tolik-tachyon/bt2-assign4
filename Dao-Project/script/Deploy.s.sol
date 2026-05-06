@@ -32,7 +32,7 @@ contract Deploy is Script {
         // 2. TOKEN VESTING (FIXED)
 
         TokenVesting vesting = new TokenVesting(
-            address(token),   // ✅ FIX: correct token reference
+            address(token),
             team,
             block.timestamp
         );
@@ -44,7 +44,9 @@ contract Deploy is Script {
         executors[0] = address(0);
 
         TimelockController timelock = new TimelockController(
-            2 days,
+            // NOTE: 10 seconds - for testing purposes.
+            //       Should be changed to bigger value, like 2 days.
+            10, 
             proposers,
             executors,
             msg.sender
@@ -72,12 +74,12 @@ contract Deploy is Script {
         // 6. OUTPUT
 
         console.log("=== DAO DEPLOYED ===");
-        console.log("Token:", address(token));
-        console.log("Vesting:", address(vesting));
-        console.log("Governor:", address(governor));
-        console.log("Timelock:", address(timelock));
-        console.log("Treasury:", address(treasury));
-        console.log("Box:", address(box));
+        console.log("TOKEN_ADDR=%s",    address(token));
+        console.log("VESTING_ADDR=%s",  address(vesting));
+        console.log("GOVERNOR_ADDR=%s", address(governor));
+        console.log("TIMELOCK_ADDR=%s", address(timelock));
+        console.log("TREASURY_ADDR=%s", address(treasury));
+        console.log("BOX_ADDR=%s",      address(box));
 
         vm.stopBroadcast();
     }
