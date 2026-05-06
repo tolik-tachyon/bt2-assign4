@@ -12,6 +12,7 @@ contract Treasury {
     }
 
     constructor(address _timelock) {
+        require(_timelock != address(0));
         timelock = _timelock;
     }
 
@@ -24,6 +25,7 @@ contract Treasury {
         external
         onlyTimelock
     {
+        require(to != address(0));
         (bool success, ) = to.call{value: amount}("");
         require(success, "ETH transfer failed");
     }

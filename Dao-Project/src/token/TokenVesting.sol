@@ -14,6 +14,8 @@ contract TokenVesting {
     uint256 public released;
 
     constructor(address _token, address _beneficiary, uint256 _start) {
+        require(_token       != address(0));
+        require(_beneficiary != address(0));
         token = IERC20(_token);
         beneficiary = _beneficiary;
         start = _start;
