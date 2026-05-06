@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TokenVesting {
+    using SafeERC20 for IERC20;
     IERC20 public immutable token;
     address public immutable beneficiary;
 
@@ -32,6 +33,6 @@ contract TokenVesting {
         uint256 amount = vested - released;
 
         released = vested;
-        token.transfer(beneficiary, amount);
+        token.safeTransfer(beneficiary, amount);
     }
 }
