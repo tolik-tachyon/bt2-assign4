@@ -15,8 +15,8 @@ contract MyGovernorTest is Test {
     TimelockController timelock;
     Box box;
 
-    uint256 constant  DAY_IN_BLOCKS = 86400;
-    uint256 constant WEEK_IN_BLOCKS = 7 * DAY_IN_BLOCKS;
+    uint256 VOTING_DELAY;
+    uint256 VOTING_PERIOD;
 
     address teamUser = address(10);
     address treasuryUser = address(11);
@@ -46,7 +46,7 @@ contract MyGovernorTest is Test {
     vm.prank(voter2);
     token.delegate(voter2);
 
-    vm.roll(block.number + DAY_IN_BLOCKS + 1);
+    vm.roll(block.number + VOTING_DELAY + 1);
 
     address[] memory proposers = new address[](0);
     address[] memory executors = new address[](1);
@@ -60,6 +60,9 @@ contract MyGovernorTest is Test {
     );
 
     governor = new MyGovernor(token, timelock);
+
+    VOTING_DELAY  = governor.votingDelay();
+    VOTING_PERIOD = governor.votingPeriod();
 
     timelock.grantRole(timelock.PROPOSER_ROLE(), address(governor));
     timelock.grantRole(timelock.EXECUTOR_ROLE(), address(0));
@@ -101,7 +104,7 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_state_active() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         assertEq(
             uint256(governor.state(id)),
@@ -114,7 +117,7 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_vote_for() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
@@ -130,7 +133,7 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_vote_against() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 0);
@@ -144,7 +147,7 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_vote_abstain() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 2);
@@ -160,7 +163,7 @@ contract MyGovernorTest is Test {
     vm.prank(address(10));
     token.transfer(voter1, 1000 ether);
 
-    vm.roll(block.number + DAY_IN_BLOCKS + 1);
+    vm.roll(block.number + VOTING_DELAY + 1);
 
     vm.prank(voter1);
     token.delegate(voter1);
@@ -173,14 +176,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_succeeded_state() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_PERIOD + 1);
 
         assertEq(
             uint256(governor.state(id)),
@@ -193,14 +196,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_queue() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_PERIOD + 1);
 
         governor.queue(
             _targets(),
@@ -215,14 +218,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_execute() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_PERIOD + 1);
 
         governor.queue(
             _targets(),
@@ -249,7 +252,7 @@ contract MyGovernorTest is Test {
     function test_defeated() public {
         uint256 id = _proposal();
 
-        vm.roll(block.number + DAY_IN_BLOCKS + WEEK_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + VOTING_PERIOD + 1);
 
         assertEq(
             uint256(governor.state(id)),
@@ -271,14 +274,14 @@ contract MyGovernorTest is Test {
     // =========================================================
     function test_full_lifecycle() public {
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
 
         vm.prank(voter1);
         governor.castVote(id, 1);
         vm.prank(voter2);
         governor.castVote(id, 1);
 
-        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_PERIOD + 1);
 
         governor.queue(
             _targets(),
@@ -308,7 +311,7 @@ contract MyGovernorTest is Test {
         token.transfer(poorUser, 1 ether); // well below 1% threshold
         vm.prank(poorUser);
         token.delegate(poorUser);
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
         address[] memory t = new address[](1); t[0] = address(box);
         uint256[] memory v = new uint256[](1);
         bytes[] memory c = new bytes[](1);
@@ -324,10 +327,10 @@ contract MyGovernorTest is Test {
     function test_defeated_quorum_not_met() public {
         // voter1 has 30k, total supply ~1M -> 3% < 4% quorum
         uint256 id = _proposal();
-        vm.roll(block.number + DAY_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_DELAY + 1);
         vm.prank(voter1);
         governor.castVote(id, 1); // votes FOR but quorum not met
-        vm.roll(block.number + WEEK_IN_BLOCKS + 1);
+        vm.roll(block.number + VOTING_PERIOD + 1);
         assertEq(
             uint256(governor.state(id)),
             uint256(IGovernor.ProposalState.Defeated)
