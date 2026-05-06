@@ -33,6 +33,7 @@ contract TokenVesting {
     function release() external {
         uint256 vested = vestedAmount();
         uint256 amount = vested - released;
+        require(amount > 0, "Nothing to release");
 
         released = vested;
         token.safeTransfer(beneficiary, amount);
